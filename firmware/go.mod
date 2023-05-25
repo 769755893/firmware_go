@@ -1,4 +1,4 @@
-module github.com/769755893/firmware_go/tree/main/firmware
+module main
 
 go 1.20
 
@@ -6,6 +6,8 @@ require (
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/json-iterator/go v1.1.12
 )
+
+require honnef.co/go/tools v0.4.3 // indirect
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1

@@ -1,8 +1,8 @@
-package github.com/769755893/firmware_go/tree/main/firmware/model
+package main
 
 type IPSWFirm struct {
 	Name        string     `json:"name"`
-	Identifier  Identifier `json:"identifier"`
+	Identifier  string `json:"identifier"`
 	Firmwares   []Firmware `json:"firmwares"`
 	Boards      []Board    `json:"boards"`
 	Boardconfig string     `json:"boardconfig"`
@@ -19,7 +19,8 @@ type Board struct {
 }
 
 type Firmware struct {
-	Identifier  Identifier `json:"identifier"`
+	Name		string	   `json:name`
+	Identifier  string `json:"identifier"`
 	Version     string     `json:"version"`
 	Buildid     string     `json:"buildid"`
 	Sha1Sum     string     `json:"sha1sum"`
@@ -30,9 +31,20 @@ type Firmware struct {
 	Releasedate string     `json:"releasedate"`
 	Uploaddate  string     `json:"uploaddate"`
 	Signed      bool       `json:"signed"`
+	Beta		bool	   `json:"beta"`
 }
 
 type Identifier string
 const (
 	IPhone81 Identifier = "iPhone8,1"
 )
+
+func decodeIpsw(data []byte) (*IPSWFirm, error) {
+	var r IPSWFirm
+	err := json.Unmarshal(data, &r)
+	return &r, err
+}
+
+func encodeIpsw(r *IPSWFirm) ([]byte, error) {
+	return json.Marshal(r)
+}

@@ -1,4 +1,4 @@
-package server
+package github.com/769755893/firmware_go/tree/main/firmware/server
 
 import (
 	"database/sql"

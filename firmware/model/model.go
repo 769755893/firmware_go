@@ -1,4 +1,4 @@
-package model
+package github.com/769755893/firmware_go/tree/main/firmware/model
 
 type IPSWFirm struct {
 	Name        string     `json:"name"`

@@ -1,4 +1,4 @@
-package main
+package github.com/769755893/firmware_go/tree/main/firmware
 
 import (
 	"compress/gzip"
@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/769755893/firmware_go/tree/main/firmware/model"
 )
 
 // "github.com/petarov/query-apple-firmware-updates/config"

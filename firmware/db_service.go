@@ -3,12 +3,26 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"reflect"
 	"time"
 )
 
 func insertTable(db sql.DB, firmware Firmware, iphoneName string, tableName string)(err error) {
-	stmt, err := db.Prepare(fmt.Sprintf("INSERT INTO %s(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) VALUES (?,?,?,?,?,?,?,?,?)", tableName, column_iphoneName ,column_identifier,column_version, column_BuildId, column_shaSum, column_md5Sum, column_fileSize, column_url, column_releaseDate, column_uploaddate, column_signed))
+	fmt.Printf("\"insertTable\": %v\n", "insertTable")
+	fmt.Printf("firmware: %v\n", firmware)
+	var sql = fmt.Sprintf("INSERT INTO %s(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) VALUES (?,?,?,?,?,?,?,?,?,?,?)", 
+	tableName,
+	column_iphoneName,
+	column_identifier,
+	column_version,
+	column_BuildId,
+	column_shaSum,
+	column_md5Sum,
+	column_fileSize,
+	column_url,
+	column_releaseDate,
+	column_uploaddate,
+	column_signed)
+	stmt, err := db.Prepare(sql)
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 		panic(err)
@@ -16,18 +30,32 @@ func insertTable(db sql.DB, firmware Firmware, iphoneName string, tableName stri
 	defer stmt.Close()
 
 	var t1 = parseDateStr(firmware.Releasedate)
+	fmt.Printf("t1: %v\n", t1)
 	var t2 = parseDateStr(firmware.Uploaddate)
-	_,er := stmt.Exec(firmware.Version, firmware.Buildid, firmware.Sha1Sum, firmware.Md5Sum, firmware.Filesize, firmware.URL, t1, t2, firmware.Signed)
+	fmt.Printf("t2: %v\n", t2)
+	_,er := stmt.Exec(
+		firmware.Name,
+		firmware.Identifier,
+		firmware.Version,
+		firmware.Buildid,
+		firmware.Sha1Sum,
+		firmware.Md5Sum,
+		firmware.Filesize,
+		firmware.URL,
+		t1,
+		t2,
+		firmware.Signed)
 	if er != nil {
-		fmt.Printf("insert failed with er: %v\n", er)
-		return er
+		fmt.Printf("er: %v\n", er)
+		panic(er)
 	}
 	fmt.Printf("\"insert success\": %v\n", "insert success")
 	return nil
 }
 
 func clearFirmware(db sql.DB, productCode string, tableName string) {
-	re, err := db.Exec(fmt.Sprintf("DELETE FROM %s WHERE %s = %s", tableName, column_identifier, productCode))
+	fmt.Printf("\"clearFirmware\": %v\n", "clearFirmware")
+	re, err := db.Exec(fmt.Sprintf(`DELETE FROM %s WHERE %s = "%s"`, tableName, column_identifier, productCode))
 	if err != nil {
 		fmt.Printf("err: %v\n", err)
 	}
@@ -46,19 +74,21 @@ func tickerUpdateFirmware(db sql.DB) {
 	// already distinct
 	var codes = mapFirmwaresCodes(queryAllFirmware(db))
 	for i:=0;i<len(codes);i++ {
-		info,er :=getIpswInfo(codes[i])
+		info,er := getIpswInfo(codes[i])
 		if er != nil {
 			fmt.Printf("er: %v\n", er)
 			continue
 		}
 		time.Sleep(3 * time.Second)
-		updateFirmware(db, codes[i], info.Name, info.Firmwares, table_firmware)
+		useInfo := mapToSignedIpsw(info)
+		updateFirmware(db, codes[i], useInfo.Name, info.Firmwares, table_firmware)
 	}
 }
 
 
 /// 立即更新，接口
 func updateFirmware(db sql.DB, productCode string, iphoneName string, firmwares []Firmware, tableName string) {
+	fmt.Printf("\"updateFirmware\": %v\n", "updateFirmware")
 	clearFirmware(db, productCode, table_firmware)
 	for i:= 0; i< len(firmwares); i++ {
 		insertTable(db, firmwares[i], iphoneName, tableName)
@@ -68,15 +98,17 @@ func updateFirmware(db sql.DB, productCode string, iphoneName string, firmwares 
 func queryAllFirmware(db sql.DB) ([] Firmware){
 	rows,err := db.Query(fmt.Sprintf("SELECT * FROM %s", table_firmware))
 	if err != nil {
-		panic(err)
+		fmt.Printf("err: %v\n", err)
 	}
 	return mapRowsToFirmwares(rows)
 }
 
 func queryFirmware(db sql.DB, productCode string, tableName string) ([] Firmware){
-	rows, err := db.Query(fmt.Sprintf("SELECT * FROM %s WHERE %s = %s AND %s = 1 ORDER BY %s DESC", tableName, column_identifier, productCode, column_signed, column_releaseDate))
+	var sql = fmt.Sprintf(`SELECT * FROM %s WHERE %s = "%s" AND %s = 1 ORDER BY %s DESC`, tableName, column_identifier, productCode, column_signed, column_releaseDate)
+	fmt.Printf("sql: %v\n", sql)
+	rows, err := db.Query(sql)
 	if err != nil {
-		panic(err)
+		fmt.Printf("err: %v\n", err)
 	}
 	return mapRowsToFirmwares(rows)
 }
@@ -88,36 +120,26 @@ func generateFirmware(db sql.DB, productCode string) ([] Firmware) {
 
 	var res [] Firmware
 	for i:=0;i<len(betaFirmwares);i++ {
-		t := reflect.ValueOf(betaFirmwares[i])
-		t.FieldByName("Beta").SetBool(true)
-
-		var firmware = t.Interface().(Firmware)
-		res = append(res, firmware)
+		var t = betaFirmwares[i]
+		t.Beta = true
+		res = append(res, t)
 	}
 
 	for i:=0;i<len(normalFirmwares);i++ {
-		t := reflect.ValueOf(normalFirmwares[i])
-		t.FieldByName("Beta").SetBool(false)
-
-		var firmware = t.Interface().(Firmware)
-		res = append(res, firmware)
+		var t = normalFirmwares[i]
+		t.Beta = false
+		res = append(res, t)
 	}
 
 	return res
  }
 
-
-/// TODO 设置超时时间自动更新 表中的 firmware
-func updateOutDateFirmware() {
-
-}
-
-func parseDateStr(dateStr string)(date *time.Time) {
-	d, e := time.Parse("2023-05-23 10:01", dateStr)
-	if e != nil {
-		fmt.Printf("e: %v\n", e)
-		return nil
+func parseDateStr(dateStr string) time.Time {
+	const layout = "2006-01-02T15:04:05Z"
+    t, err := time.Parse(layout, dateStr)
+	if err != nil {
+		fmt.Printf("parse date with err: %v\n", err)
+		panic(err)
 	}
-
-	return &d
+	return t
 }

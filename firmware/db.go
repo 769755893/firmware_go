@@ -8,17 +8,17 @@ import (
 const table_firmware = "IpswFirmware"
 const table_firmware_beta = "IpswFirmwareBeta"
 
-const column_iphoneName = "name"
-const column_identifier = "identifier"
-const column_version = "version" //1
-const column_BuildId = "buildId" //2
-const column_shaSum = "sha1Sum" //3
-const column_md5Sum = "md5Sum" //4
-const column_fileSize = "fileSize" //5
-const column_url = "url" //6
-const column_releaseDate = "releaseDate" //7
-const column_uploaddate = "uploaddate" //8
-const column_signed = "signed" //9
+const column_iphoneName = "name"//1
+const column_identifier = "identifier"//2
+const column_version = "version" //3
+const column_BuildId = "buildId" //4
+const column_shaSum = "sha1Sum" //5
+const column_md5Sum = "md5Sum" //6
+const column_fileSize = "fileSize" //7
+const column_url = "url" //8
+const column_releaseDate = "releaseDate" //9
+const column_uploaddate = "uploaddate" //10
+const column_signed = "available" //11
 
 func createIpswTable(db sql.DB, tableName string) (er error){
 	_, err := db.Exec(fmt.Sprintf(`
@@ -30,11 +30,11 @@ func createIpswTable(db sql.DB, tableName string) (er error){
 		%s VARCHAR(100),
 		%s VARCHAR(200),
 		%s VARCHAR(200),
-		%s INT,
+		%s BIGINT,
 		%s VARCHAR(500),
-		%s DATE,
-		%s DATE,
-		%s INT
+		%s DATETIME,
+		%s DATETIME,
+		%s INT(1)
 	  );
 		`, tableName,
 		column_iphoneName,
@@ -61,12 +61,12 @@ func createIpswTable(db sql.DB, tableName string) (er error){
 func initTable(db sql.DB)(er error) {
 	er0 := createIpswTable(db, table_firmware)
 	if er0 != nil {
-		return er0
+		fmt.Printf("failed to create ipsw table: %v\n", er0)
 	}
 
 	er1 := createIpswTable(db, table_firmware_beta)
 	if er1 != nil {
-		return er1
+		fmt.Printf("failed to create ipsw beta table: %v\n", er1)
 	}
 
 	fmt.Printf("\"success to create all table\": %v\n", "success to create all table")

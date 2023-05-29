@@ -1,0 +1,4 @@
+///go install github.com/k0kubun/dbml/cmd/dbmlc@latest
+
+Table firmware {
+}
